@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 import {
   Activity,
@@ -83,6 +84,19 @@ function AjustarMapa() {
     </button>
   );
 }
+const iconoZona = L.divIcon({
+className: "marcador-personalizado",
+html: '<div style="width:18px;height:18px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+iconSize: [24, 24],
+iconAnchor: [12, 12],
+});
+
+const iconoAnegamiento = L.divIcon({
+className: "marcador-personalizado",
+html: '<div style="width:18px;height:18px;background:#dc2626;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+iconSize: [24, 24],
+iconAnchor: [12, 12],
+});
 
 function App() {
   const [origen, setOrigen] = useState("");
@@ -521,7 +535,13 @@ function App() {
 
               {mostrarZonas &&
                 zonasInundables.map((zona) => (
-                  <Marker key={zona.id} position={zona.coordenadas}>
+                  <Marker
+key={zona.id}
+position={zona.coordenadas}
+icon={iconoZona}
+
+>
+
                     <Popup>
                       <strong>{zona.nombre}</strong>
                       <br />
@@ -555,7 +575,13 @@ function App() {
 
               {mostrarAntecedentes &&
                 puntosAnegamiento.map((punto) => (
-                  <Marker key={punto.id} position={punto.coordenadas}>
+                  <Marker
+key={punto.id}
+position={punto.coordenadas}
+icon={iconoAnegamiento}
+
+>
+
                     <Popup>
                       <strong>{punto.nombre}</strong>
                       <br />
@@ -621,7 +647,11 @@ function App() {
 
           <div className="map-legend">
             <span>
-              <i className="legend-dot yellow" />
+  <i className="legend-dot blue" />
+  Zonas de referencia
+</span>
+            <span>
+              <i className="legend-dot red" />
               Antecedente histórico
             </span>
 
