@@ -982,3 +982,516 @@
     flex-direction: column;
   }
 }
+.reportes-indicadores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.indicador-reporte {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #dce7ee;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(20, 50, 70, 0.05);
+}
+
+.indicador-reporte span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.indicador-reporte strong {
+  color: #087f8c;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .reportes-indicadores {
+    grid-template-columns: 1fr;
+  }
+}
+/* Marcadores de reportes ciudadanos */
+
+.reporte-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.reporte-marker {
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.reporte-marker.pendiente {
+  background-color: #f59e0b;
+}
+
+.reporte-marker.verificado {
+  background-color: #16a34a;
+}
+/* =================================
+   PRONÓSTICO METEOROLÓGICO
+================================= */
+
+.forecast-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.forecast-section h3 {
+  font-size: 17px;
+  color: #17324d;
+  margin: 20px 0 14px;
+}
+
+/* Pronóstico por hora */
+
+.forecast-hourly {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 2px 16px;
+  scroll-behavior: smooth;
+}
+
+.forecast-item {
+  min-width: 105px;
+  padding: 14px 10px;
+  background: #f1f7fc;
+  border: 1px solid #dce9f3;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.forecast-item strong {
+  color: #17324d;
+  font-size: 14px;
+}
+
+.forecast-item span {
+  font-size: 12px;
+  color: #52677b;
+  text-align: center;
+}
+
+/* Pronóstico diario */
+
+.forecast-daily {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.forecast-day {
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.forecast-day strong {
+  color: #17324d;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.forecast-day span {
+  font-size: 12px;
+  color: #52677b;
+  line-height: 1.5;
+}
+/* =================================
+   VISUAL DEL NIVEL DEL RÍO
+================================= */
+
+.river-visual {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.river-landscape {
+  position: relative;
+  height: 125px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: linear-gradient(
+    to bottom,
+    #b9e2fa 0%,
+    #e4f5ff 55%,
+    #9bd5ed 56%,
+    #4da8d4 100%
+  );
+}
+
+.river-sky {
+  height: 55%;
+  position: relative;
+}
+
+.river-cloud {
+  position: absolute;
+  width: 65px;
+  height: 22px;
+  background: white;
+  border-radius: 30px;
+  opacity: 0.9;
+}
+
+.cloud-one {
+  top: 20px;
+  left: 25%;
+}
+
+.cloud-two {
+  top: 35px;
+  right: 15%;
+}
+
+.river-trees {
+  position: absolute;
+  bottom: 35px;
+  left: 12px;
+  font-size: 25px;
+  z-index: 2;
+}
+
+.river-water {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 48%;
+  background: #55b7df;
+  overflow: hidden;
+}
+
+.river-water-level {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 105, 180, 0.5);
+  transition: height 1s ease;
+}
+
+.river-boat {
+  position: absolute;
+  right: 22%;
+  bottom: 8px;
+  font-size: 27px;
+  z-index: 2;
+}
+
+.river-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  background: #f1f7fc;
+  border: 1px solid #dce9f3;
+  border-radius: 12px;
+}
+
+.river-gauge span {
+  display: block;
+  font-size: 13px;
+  color: #52677b;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dce9f3;
+}
+
+.river-gauge strong {
+  font-size: 23px;
+  color: #17324d;
+  margin-top: 3px;
+}
+
+.river-gauge small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.river-status {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.river-status.normal {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.river-status.warning {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.river-status.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+/* =================================
+   ILUSTRACIÓN METEOROLÓGICA
+================================= */
+
+.weather-illustration {
+  position: relative;
+  height: 135px;
+  width: 100%;
+  margin: 18px 0;
+  border-radius: 15px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #b9e5fa 0%, #e5f5ff 100%);
+  transition: background 0.5s ease;
+}
+
+/* Sol */
+
+.weather-sun {
+  position: absolute;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: #ffd45c;
+  top: 23px;
+  right: 65px;
+  box-shadow: 0 0 25px rgba(255, 212, 92, 0.6);
+}
+
+/* Nubes */
+
+.weather-cloud {
+  position: absolute;
+  width: 85px;
+  height: 27px;
+  border-radius: 30px;
+  background: #fff;
+  top: 55px;
+  left: 65px;
+  box-shadow:
+    18px -15px 0 3px #fff,
+    38px 0 0 -2px #fff;
+  transition: background 0.5s ease;
+}
+
+.cloud-two {
+  transform: scale(0.75);
+  left: auto;
+  right: 35px;
+  top: 75px;
+}
+
+/* Lluvia */
+
+.weather-rain {
+  position: absolute;
+  top: 88px;
+  left: 100px;
+  display: flex;
+  gap: 17px;
+  opacity: 0;
+}
+
+.weather-rain span {
+  width: 3px;
+  height: 13px;
+  border-radius: 5px;
+  background: #258bd1;
+  transform: rotate(15deg);
+  animation: lluvia 0.8s linear infinite;
+}
+
+.weather-rain span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.weather-rain span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.weather-rain span:nth-child(4) {
+  animation-delay: 0.6s;
+}
+
+/* Relámpago */
+
+.weather-lightning {
+  position: absolute;
+  top: 83px;
+  left: 145px;
+  width: 12px;
+  height: 25px;
+  background: #ffd43b;
+  clip-path: polygon(55% 0, 100% 0, 65% 45%, 100% 45%, 20% 100%, 40% 55%, 0 55%);
+  opacity: 0;
+}
+
+/* Horizonte */
+
+.weather-horizon {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 45px;
+  background: linear-gradient(to bottom, #55b8d9, #2799c7);
+  border-top: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Estados meteorológicos */
+
+.weather-illustration.despejado .weather-cloud {
+  opacity: 0;
+}
+
+.weather-illustration.parcial .cloud-two {
+  opacity: 0.8;
+}
+
+.weather-illustration.nublado .weather-sun,
+.weather-illustration.niebla .weather-sun {
+  opacity: 0;
+}
+
+.weather-illustration.nublado .weather-cloud,
+.weather-illustration.niebla .weather-cloud,
+.weather-illustration.lluvia .weather-cloud,
+.weather-illustration.tormenta .weather-cloud {
+  background: #d5e0e9;
+  box-shadow:
+    18px -15px 0 3px #d5e0e9,
+    38px 0 0 -2px #d5e0e9;
+}
+
+.weather-illustration.lluvia .weather-sun,
+.weather-illustration.tormenta .weather-sun {
+  opacity: 0;
+}
+
+.weather-illustration.lluvia .weather-rain,
+.weather-illustration.tormenta .weather-rain {
+  opacity: 1;
+}
+
+.weather-illustration.tormenta {
+  background: linear-gradient(to bottom, #64748b, #a5b4c4);
+}
+
+.weather-illustration.tormenta .weather-lightning {
+  opacity: 1;
+}
+
+.weather-illustration.niebla {
+  background: linear-gradient(to bottom, #cbd5e1, #e2e8f0);
+}
+
+.weather-illustration.niebla .weather-cloud {
+  opacity: 0.5;
+}
+
+@keyframes lluvia {
+  from {
+    transform: translateY(0) rotate(15deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(12px) rotate(15deg);
+    opacity: 0.2;
+  }
+}
+/* =================================
+   AJUSTES DE LA ILUSTRACIÓN DEL CLIMA
+================================= */
+
+/* El dibujo representa el cielo, no un río */
+.weather-horizon {
+  display: none;
+}
+
+.weather-illustration {
+  background: linear-gradient(
+    to bottom,
+    #8ed0f2,
+    #d9f0fc
+  );
+}
+
+/* Sol detrás de las nubes */
+.weather-sun {
+  top: 22px;
+  right: 105px;
+  z-index: 1;
+  opacity: 1;
+}
+
+/* Nubes más grandes y suaves */
+.weather-cloud {
+  width: 105px;
+  height: 34px;
+  top: 55px;
+  left: auto;
+  right: 90px;
+  z-index: 2;
+  background: #f8fafc;
+  box-shadow:
+    20px -18px 0 5px #f8fafc,
+    48px -10px 0 2px #f8fafc,
+    65px 0 0 -2px #f8fafc;
+}
+
+.cloud-two {
+  right: 25px;
+  top: 78px;
+  transform: scale(0.8);
+}
+
+/* Cielo nublado: sol parcialmente cubierto */
+.weather-illustration.nublado .weather-sun {
+  opacity: 1;
+}
+
+.weather-illustration.nublado .weather-cloud,
+.weather-illustration.niebla .weather-cloud {
+  background: #e7edf2;
+  box-shadow:
+    20px -18px 0 5px #e7edf2,
+    48px -10px 0 2px #e7edf2,
+    65px 0 0 -2px #e7edf2;
+}
+
+/* Cielo despejado */
+.weather-illustration.despejado .weather-sun {
+  opacity: 1;
+}
+
+/* Lluvia y tormenta */
+.weather-illustration.lluvia .weather-cloud,
+.weather-illustration.tormenta .weather-cloud {
+  background: #aebdca;
+  box-shadow:
+    20px -18px 0 5px #aebdca,
+    48px -10px 0 2px #aebdca,
+    65px 0 0 -2px #aebdca;
+}

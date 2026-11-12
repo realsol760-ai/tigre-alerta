@@ -38,7 +38,7 @@ import "./App.css";
 import { supabase } from "./lib/supabaseClient";
 
 const API_CLIMA =
-  "https://api.open-meteo.com/v1/forecast?latitude=-34.42&longitude=-58.58&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,weather_code,wind_speed_10m&hourly=precipitation_probability,precipitation&daily=precipitation_probability_max,precipitation_sum,weather_code&timezone=America%2FArgentina%2FBuenos_Aires&forecast_days=1";
+  "https://api.open-meteo.com/v1/forecast?latitude=-34.42&longitude=-58.58&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,weather_code,wind_speed_10m&hourly=precipitation_probability,precipitation&daily=precipitation_probability_max,precipitation_sum,weather_code&timezone=America%2FArgentina%2FBuenos_Aires&forecast_days=7";
 
 function describirClima(codigo) {
   if (codigo === 0) return "Despejado";
@@ -97,6 +97,12 @@ html: '<div style="width:18px;height:18px;background:#dc2626;border:3px solid wh
 iconSize: [24, 24],
 iconAnchor: [12, 12],
 });
+const iconoReporte = L.divIcon({
+  className: "marcador-personalizado",
+  html: '<div style="width:18px;height:18px;background:#f59e0b;border:3px solid white;border-radius:50%;box-shadow:0 1px 5px rgba(0,0,0,0.4);"></div>',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
 function App() {
   const [origen, setOrigen] = useState("");
@@ -106,6 +112,9 @@ function App() {
   const [errorRuta, setErrorRuta] = useState("");
 
   const [clima, setClima] = useState(null);
+  const [nivelRio, setNivelRio] = useState(null);
+  const [pronosticoHorario, setPronosticoHorario] = useState([]);
+const [pronosticoDiario, setPronosticoDiario] = useState([]);
   const [cargandoClima, setCargandoClima] = useState(false);
   const [errorClima, setErrorClima] = useState("");
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
@@ -128,6 +137,10 @@ function App() {
     latitud: "",
     longitud: "",
   });
+  // Antecedentes históricos almacenados en Supabase
+const [antecedentesHistoricos, setAntecedentesHistoricos] = useState([]);
+const [cargandoAntecedentes, setCargandoAntecedentes] = useState(true);
+const [errorAntecedentes, setErrorAntecedentes] = useState("");
 
   const cargarReportes = useCallback(async () => {
     setCargandoReportes(true);
@@ -136,7 +149,7 @@ function App() {
         .from("reportes_inundacion")
         .select("*")
         .order("creado_en", { ascending: false })
-        .limit(50);
+        .limit(1000);
 
       if (error) throw error;
       setReportes(data || []);
@@ -150,15 +163,110 @@ function App() {
       setCargandoReportes(false);
     }
   }, []);
+  // Consultar antecedentes históricos desde Supabase
+const cargarAntecedentes = useCallback(async () => {
+  setCargandoAntecedentes(true);
+
+  try {
+    const { data, error } = await supabase
+      .from("historico_anegamientos")
+      .select("*")
+      .order("fecha_evento", { ascending: false });
+
+    if (error) throw error;
+
+    setAntecedentesHistoricos(data || []);
+    setErrorAntecedentes("");
+  } catch (error) {
+    console.error("Error al cargar antecedentes históricos:", error);
+    setErrorAntecedentes("No se pudieron cargar los antecedentes históricos.");
+  } finally {
+    setCargandoAntecedentes(false);
+  }
+}, []);
+  // Indicadores calculados a partir de los reportes de Supabase
+const ahora = Date.now();
+const hace24Horas = ahora - 24 * 60 * 60 * 1000;
+
+const reportesRecientes = reportes.filter((reporte) => {
+  const fecha = new Date(reporte.creado_en).getTime();
+  return Number.isFinite(fecha) && fecha >= hace24Horas && fecha <= ahora;
+});
+
+const reportesPendientes = reportes.filter(
+  (reporte) => reporte.estado === "pendiente"
+);
+
+const zonasReportadas = new Set(
+  reportesRecientes.map((reporte) =>
+    (reporte.localidad || "").trim().toLowerCase()
+  ).filter(Boolean)
+).size;
 
   useEffect(() => {
     cargarReportes();
   }, [cargarReportes]);
+  // Cargar antecedentes históricos al iniciar la aplicación
+useEffect(() => {
+  cargarAntecedentes();
+}, [cargarAntecedentes]);
+  // Actualización automática de reportes mediante Supabase Realtime
+useEffect(() => {
+  const canal = supabase
+    .channel("cambios-reportes-inundacion")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "reportes_inundacion",
+      },
+      () => {
+        cargarReportes();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(canal);
+  };
+}, [cargarReportes]);
 
   function cambiarCampoReporte(event) {
     const { name, value } = event.target;
     setFormReporte((actual) => ({ ...actual, [name]: value }));
   }
+  function obtenerUbicacionReporte() {
+  setErrorReporte("");
+  setMensajeReporte("");
+
+  if (!navigator.geolocation) {
+    setErrorReporte("Tu dispositivo no permite obtener la ubicación automáticamente.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (posicion) => {
+      setFormReporte((actual) => ({
+        ...actual,
+        latitud: String(posicion.coords.latitude),
+        longitud: String(posicion.coords.longitude),
+      }));
+
+      setMensajeReporte("Ubicación obtenida correctamente.");
+    },
+    () => {
+      setErrorReporte(
+        "No pudimos obtener tu ubicación. Podés enviar el reporte sin ella."
+      );
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000,
+    }
+  );
+}
 
   async function enviarReporte(event) {
     event.preventDefault();
@@ -263,6 +371,25 @@ function App() {
       }
 
       setClima(datos.current);
+      setPronosticoHorario(
+  (datos.hourly?.time || [])
+    .filter((hora) => hora >= datos.current.time)
+    .slice(0, 48)
+    .map((hora, indice) => ({
+    hora,
+    probabilidad: datos.hourly.precipitation_probability?.[indice] ?? 0,
+    precipitacion: datos.hourly.precipitation?.[indice] ?? 0,
+  }))
+);
+
+setPronosticoDiario(
+  (datos.daily?.time || []).map((fecha, indice) => ({
+    fecha,
+    probabilidad: datos.daily.precipitation_probability_max?.[indice] ?? 0,
+    precipitacion: datos.daily.precipitation_sum?.[indice] ?? 0,
+    codigo: datos.daily.weather_code?.[indice],
+  }))
+);
       setUltimaActualizacion(new Date());
     } catch (error) {
       setErrorClima(
@@ -276,6 +403,63 @@ function App() {
   useEffect(() => {
     consultarClima();
   }, [consultarClima]);
+  const consultarNivelRio = useCallback(async () => {
+  try {
+    const hoy = new Date();
+    const hace7Dias = new Date();
+    hace7Dias.setDate(hoy.getDate() - 7);
+
+    const formatoFecha = (fecha) => {
+      const anio = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dia = String(fecha.getDate()).padStart(2, "0");
+      return `${anio}-${mes}-${dia}`;
+    };
+
+    const parametros = new URLSearchParams();
+
+parametros.set("timeStart", formatoFecha(hace7Dias));
+parametros.set("timeEnd", formatoFecha(hoy));
+parametros.set("seriesId", "49");
+parametros.set("siteCode", "49");
+parametros.set("varId", "2");
+parametros.set("format", "json");
+
+const url = `https://alerta.ina.gob.ar/pub/datos/datos&${parametros.toString()}`;
+
+    const respuesta = await fetch(url);
+
+    if (!respuesta.ok) {
+      throw new Error("No se pudo consultar el nivel del río.");
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.data || datos.data.length === 0) {
+      throw new Error("No hay mediciones disponibles.");
+    }
+
+    const ultimaMedicion = datos.data[datos.data.length - 1];
+
+    setNivelRio({
+      valor: Number(ultimaMedicion.valor),
+      fecha: ultimaMedicion.timeupdate || ultimaMedicion.timeend,
+    });
+
+  } catch (error) {
+    console.error("Error al consultar el nivel del río:", error);
+    setNivelRio(null);
+  }
+}, []);
+useEffect(() => {
+  consultarNivelRio();
+
+  const intervalo = setInterval(() => {
+    consultarNivelRio();
+  }, 30 * 60 * 1000);
+
+  return () => clearInterval(intervalo);
+}, [consultarNivelRio]);
 
   function buscarRuta(event) {
     event.preventDefault();
@@ -369,15 +553,73 @@ function App() {
             <span className="metric-label">NIVEL DEL RÍO</span>
           </div>
 
-          <div className="metric-value">Sin datos</div>
+          <div className="metric-value">
+  {nivelRio !== null
+    ? `${nivelRio.valor.toFixed(2)} m`
+    : "Sin datos"}
+</div>
+{nivelRio !== null && (
+  <div
+    className={`river-status ${
+      nivelRio.valor >= 3.8
+        ? "danger"
+        : nivelRio.valor >= 3.3
+        ? "warning"
+        : "normal"
+    }`}
+  >
+    {nivelRio.valor >= 3.8
+      ? "Nivel de evacuación"
+      : nivelRio.valor >= 3.3
+      ? "Nivel de alerta"
+      : "Por debajo del nivel de alerta"}
+  </div>
+)}
+{nivelRio !== null && (
+  <div className="river-visual">
+    <div className="river-landscape">
+      <div className="river-sky">
+        <span className="river-cloud cloud-one"></span>
+        <span className="river-cloud cloud-two"></span>
+      </div>
+
+      <div className="river-trees">
+        🌳 🌴 🌳
+      </div>
+
+      <div className="river-water">
+        <div
+          className="river-water-level"
+          style={{
+            height: `${Math.min(
+              Math.max((nivelRio.valor / 4.5) * 100, 0),
+              100
+            )}%`,
+          }}
+        ></div>
+
+        <span className="river-boat">⛵</span>
+      </div>
+    </div>
+
+    <div className="river-gauge">
+      <span>3,80 m · Evacuación</span>
+      <span>3,30 m · Alerta</span>
+      <strong>{nivelRio.valor.toFixed(2)} m</strong>
+      <small>Nivel registrado por el INA</small>
+    </div>
+  </div>
+)}
 
           <p className="metric-description">
-            Fuente hidrológica pendiente de conexión.
+            Fuente: INA - Estación Tigre. Altura hidrométrica.
           </p>
 
           <div className="metric-footer">
             <Clock3 size={15} />
-            Medición no disponible
+            {nivelRio?.fecha
+  ? `Última medición: ${new Date(nivelRio.fecha).toLocaleString("es-AR")}`
+  : "Esperando medición disponible"}
           </div>
         </article>
 
@@ -403,6 +645,35 @@ function App() {
               ? describirClima(codigoClima)
               : errorClima || "Consultá el estado meteorológico."}
           </p>
+          <div
+  className={`weather-illustration ${
+    codigoClima === 0
+      ? "despejado"
+      : [1, 2].includes(codigoClima)
+      ? "parcial"
+      : codigoClima === 3
+      ? "nublado"
+      : [45, 48].includes(codigoClima)
+      ? "niebla"
+      : codigoClima >= 95
+      ? "tormenta"
+      : codigoClima >= 51
+      ? "lluvia"
+      : "nublado"
+  }`}
+>
+  <div className="weather-sun"></div>
+  <div className="weather-cloud cloud-one"></div>
+  <div className="weather-cloud cloud-two"></div>
+  <div className="weather-rain">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+  <div className="weather-lightning"></div>
+  <div className="weather-horizon"></div>
+</div>
 
           <div className="metric-footer">
             <Activity size={15} />
@@ -454,9 +725,56 @@ function App() {
           )}
 
           <p className="source-note">
-            Fuente: Open-Meteo. Datos meteorológicos para la zona de Tigre.
-          </p>
-        </article>
+  Fuente: Open-Meteo. Datos meteorológicos para la zona de Tigre.
+</p>
+
+<div className="forecast-section">
+  <h3>Pronóstico para las próximas 48 horas</h3>
+
+  <div className="forecast-hourly">
+    {pronosticoHorario.map((dato, indice) => (
+      <div className="forecast-item" key={dato.hora}>
+        <strong>
+          {new Date(dato.hora).toLocaleTimeString("es-AR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </strong>
+
+
+    <span>{dato.probabilidad}% lluvia</span>
+    <span>{dato.precipitacion} mm</span>
+  </div>
+))}
+
+
+  </div>
+
+  <h3>Pronóstico para los próximos 7 días</h3>
+
+  <div className="forecast-daily">
+    {pronosticoDiario.map((dia) => (
+      <div className="forecast-day" key={dia.fecha}>
+        <strong>
+          {new Date(`${dia.fecha}T12:00:00`).toLocaleDateString("es-AR", {
+            weekday: "long",
+            day: "2-digit",
+            month: "2-digit",
+          })}
+        </strong>
+
+
+    <span>{describirClima(dia.codigo)}</span>
+    <span>{dia.probabilidad}% de lluvia</span>
+    <span>{dia.precipitacion} mm acumulados</span>
+  </div>
+))}
+
+
+  </div>
+</div>
+</article>
+
 
         <article className="metric-card">
           <div className="metric-heading">
@@ -493,6 +811,30 @@ function App() {
               Tigre, Buenos Aires
             </span>
           </div>
+          <div className="reportes-indicadores">
+  <div className="indicador-reporte">
+    <span>Reportes recibidos (24 h)</span>
+    <strong>{reportesRecientes.length}</strong>
+  </div>
+
+  <div className="indicador-reporte">
+    <span>Reportes sin verificar</span>
+    <strong>{reportesPendientes.length}</strong>
+  </div>
+
+  <div className="indicador-reporte">
+    <span>Localidades con reportes (24 h)</span>
+    <strong>{zonasReportadas}</strong>
+  </div>
+</div>
+<div className="source-note">
+  <strong>Antecedentes históricos: </strong>
+  {cargandoAntecedentes
+    ? "Consultando Supabase..."
+    : errorAntecedentes
+    ? errorAntecedentes
+    : `${antecedentesHistoricos.length} registros recuperados desde Supabase`}
+</div>
 
           <div className="map-filters">
             <div className="filter-heading">
@@ -604,6 +946,62 @@ icon={iconoAnegamiento}
                   </Marker>
                 ))}
 
+                {/* Antecedentes históricos provenientes de Supabase */}
+{antecedentesHistoricos
+  .filter(
+    (antecedente) =>
+      antecedente.latitud !== null &&
+      antecedente.latitud !== undefined &&
+      antecedente.longitud !== null &&
+      antecedente.longitud !== undefined &&
+      Number.isFinite(Number(antecedente.latitud)) &&
+      Number.isFinite(Number(antecedente.longitud))
+  )
+  .map((antecedente) => (
+    <Marker
+      key={`historico-${antecedente.id}`}
+      position={[
+        Number(antecedente.latitud),
+        Number(antecedente.longitud),
+      ]}
+      icon={iconoAnegamiento}
+    >
+      <Popup>
+        <strong>Antecedente histórico de anegamiento</strong>
+        <br />
+        Calle: {antecedente.calle}
+        <br />
+        Localidad: {antecedente.localidad}
+        <br />
+        Fecha: {antecedente.fecha_evento || "No disponible"}
+        <br />
+        Tipo: {antecedente.tipo_evento.replaceAll("_", " ")}
+        <br />
+        Fuente: {antecedente.fuente}
+        <br />
+        Estado actual: sin datos actualizados.
+        {antecedente.descripcion && (
+          <>
+            <br />
+            Descripción: {antecedente.descripcion}
+          </>
+        )}
+        {antecedente.url_fuente && (
+          <>
+            <br />
+            <a
+              href={antecedente.url_fuente}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Consultar fuente
+            </a>
+          </>
+        )}
+      </Popup>
+    </Marker>
+  ))}
+
               {reportes
                 .filter(
                   (reporte) =>
@@ -616,11 +1014,24 @@ icon={iconoAnegamiento}
                 )
                 .map((reporte) => (
                   <Marker
-                    key={`reporte-${reporte.id}`}
-                    position={[Number(reporte.latitud), Number(reporte.longitud)]}
-                  >
+  key={`reporte-${reporte.id}`}
+  position={[Number(reporte.latitud), Number(reporte.longitud)]}
+  icon={L.divIcon({
+    className: "reporte-marker-wrapper",
+    html: `<div class="reporte-marker ${
+      reporte.estado === "verificado" ? "verificado" : "pendiente"
+    }"></div>`,
+    iconSize: [20, 20],
+      iconAnchor: [10, 10],
+})}
+>
+
                     <Popup>
-                      <strong>Reporte ciudadano pendiente</strong>
+                      <strong>
+  {reporte.estado === "verificado"
+    ? "Reporte ciudadano verificado"
+    : "Reporte ciudadano pendiente de verificación"}
+</strong>
                       <br />
                       {reporte.calle} — {reporte.localidad}
                       <br />
@@ -630,7 +1041,9 @@ icon={iconoAnegamiento}
                       <br />
                       Fecha: {formatearFechaReporte(reporte.creado_en)}
                       <br />
-                      Estado: pendiente de verificación
+                      Estado: {reporte.estado === "verificado"
+  ? "Verificado"
+  : "Pendiente de verificación"}
                       {reporte.descripcion && (
                         <>
                           <br />
@@ -868,40 +1281,20 @@ icon={iconoAnegamiento}
             maxLength={1000}
           />
 
-          <details className="report-coordinates">
-            <summary>Agregar coordenadas exactas (opcional)</summary>
-            <p>Solo completalas si conocés las coordenadas del lugar. Sin coordenadas, el reporte aparecerá en la lista, pero no como marcador en el mapa.</p>
-            <div className="report-form-row">
-              <div>
-                <label htmlFor="reporte-latitud">LATITUD</label>
-                <input
-                  id="reporte-latitud"
-                  name="latitud"
-                  type="number"
-                  step="any"
-                  min="-90"
-                  max="90"
-                  placeholder="-34.42"
-                  value={formReporte.latitud}
-                  onChange={cambiarCampoReporte}
-                />
-              </div>
-              <div>
-                <label htmlFor="reporte-longitud">LONGITUD</label>
-                <input
-                  id="reporte-longitud"
-                  name="longitud"
-                  type="number"
-                  step="any"
-                  min="-180"
-                  max="180"
-                  placeholder="-58.59"
-                  value={formReporte.longitud}
-                  onChange={cambiarCampoReporte}
-                />
-              </div>
-            </div>
-          </details>
+          <div className="report-location">
+  <button
+    className="text-action"
+    type="button"
+    onClick={obtenerUbicacionReporte}
+  >
+    Usar mi ubicación actual
+  </button>
+
+  <p>
+    Si autorizás el acceso a tu ubicación, podremos señalar
+    el lugar del reporte en el mapa.
+  </p>
+</div>
 
           {errorReporte && <p className="inline-error" role="alert">{errorReporte}</p>}
           {mensajeReporte && (
